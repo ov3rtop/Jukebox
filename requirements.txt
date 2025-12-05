@@ -4,7 +4,7 @@
 #### ESSENTIAL LIBRARIES FOR MAIN FUNCTIONALITY ####
 
 # RFID reader support
-evdev>=1.6.0,<2.0.0
+evdev>=1.6.0
 
 # SPI communication for RC522/PN532 readers
 git+https://github.com/lthiery/SPI-Py.git#egg=spi-py
@@ -13,22 +13,19 @@ git+https://github.com/lthiery/SPI-Py.git#egg=spi-py
 yt-dlp>=2024.1.0
 
 # Serial communication
-pyserial>=3.5,<4.0.0
+pyserial>=3.5
 
 # GPIO support - use shim to keep current RPi.GPIO behavior under Bookworm
 # see https://github.com/MiczFlor/RPi-Jukebox-RFID/issues/2313
-rpi-lgpio>=0.4 ; platform_machine == "armv7l" or platform_machine == "aarch64"
+rpi-lgpio ; platform_machine == "armv7l" or platform_machine == "aarch64"
 
 #### TESTING-RELATED PACKAGES ####
 
-# Test framework
-pytest>=8.0.0,<9.0.0
-
-# Pytest path handling
-pytest-pythonpath>=0.7.4
+# Test framework (pytest-pythonpath is deprecated, use pytest's native pythonpath config)
+pytest>=7.0.0
 
 # Coverage reports with pytest
-pytest-cov>=4.1.0,<5.0.0
+pytest-cov>=4.1.0
 
 # Coverage reporting
-coverage>=7.4.0,<8.0.0
+coverage>=7.0.0
