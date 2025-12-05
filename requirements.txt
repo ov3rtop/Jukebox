@@ -7,7 +7,10 @@
 evdev>=1.6.0
 
 # SPI communication for RC522/PN532 readers
-git+https://github.com/lthiery/SPI-Py.git#egg=spi-py
+# Note: spidev is installed via apt (python3-spidev) for better compatibility
+# The SPI-Py library from GitHub is optional and may have build issues
+# Uncomment the following line only if you need SPI-Py specifically:
+# git+https://github.com/lthiery/SPI-Py.git#egg=spi-py
 
 # YouTube download support
 yt-dlp>=2024.1.0
@@ -17,6 +20,7 @@ pyserial>=3.5
 
 # GPIO support - use shim to keep current RPi.GPIO behavior under Bookworm
 # see https://github.com/MiczFlor/RPi-Jukebox-RFID/issues/2313
+# Note: Only installed on ARM platforms (Raspberry Pi)
 rpi-lgpio ; platform_machine == "armv7l" or platform_machine == "aarch64"
 
 #### TESTING-RELATED PACKAGES ####

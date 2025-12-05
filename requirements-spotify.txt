@@ -1,6 +1,18 @@
 # Spotify related requirements
 # You need to install these with `sudo pip install --upgrade --force-reinstall -r requirements-spotify.txt`
-Mopidy-Local
-Mopidy-MPD
-Mopidy-Iris==3.69.3
-Mopidy-Spotify==5.0.0a3
+
+# Note: Mopidy and its extensions require specific versions
+# Check https://mopidy.com/ for latest compatible versions
+
+# Local media support
+Mopidy-Local>=3.2.0
+
+# MPD protocol support
+Mopidy-MPD>=3.3.0
+
+# Web interface (check for latest stable version)
+Mopidy-Iris>=3.69.0
+
+# Spotify support (currently alpha, may have issues)
+# See: https://github.com/mopidy/mopidy-spotify
+Mopidy-Spotify>=5.0.0a1
