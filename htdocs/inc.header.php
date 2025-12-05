@@ -2,6 +2,13 @@
 namespace JukeBox;
 
 /**************************************************
+* SECURITY
+* Include security helper functions first
+***************************************************/
+require_once(__DIR__ . '/inc.security.php');
+\JukeBox\Security\initSession();
+
+/**************************************************
 * VARIABLES
 * No changes required if you stuck to the
 * INSTALL.md instructions.

@@ -1,38 +1,34 @@
-# Test trigger
 # Library dependencies for the python code.  You need to install these with
 # `sudo python3 -m pip install --upgrade --force-reinstall -r requirements.txt` before you can run this.
 
 #### ESSENTIAL LIBRARIES FOR MAIN FUNCTIONALITY ####
 
-# related libraries.
-evdev
-git+https://github.com/lthiery/SPI-Py.git#egg=spi-py
-yt-dlp
-pyserial
-# use shim to keep current RPi.GPIO behavior also under Bookworm - see https://github.com/MiczFlor/RPi-Jukebox-RFID/issues/2313
-rpi-lgpio --no-binary=lgpio
+# RFID reader support
+evdev>=1.6.0,<2.0.0
 
-# Type checking for python
-# typing
+# SPI communication for RC522/PN532 readers
+git+https://github.com/lthiery/SPI-Py.git#egg=spi-py
+
+# YouTube download support
+yt-dlp>=2024.1.0
+
+# Serial communication
+pyserial>=3.5,<4.0.0
+
+# GPIO support - use shim to keep current RPi.GPIO behavior under Bookworm
+# see https://github.com/MiczFlor/RPi-Jukebox-RFID/issues/2313
+rpi-lgpio>=0.4 ; platform_machine == "armv7l" or platform_machine == "aarch64"
 
 #### TESTING-RELATED PACKAGES ####
 
-# Checks style, syntax, and other useful errors
-# pylint==1.6.5
+# Test framework
+pytest>=8.0.0,<9.0.0
 
-# We'll use pytest to run our tests; this isn't really necessary to run the code, but it is to run
-# the tests.  With this here, you can run the tests with `py.test` from the base directory.
-pytest
+# Pytest path handling
+pytest-pythonpath>=0.7.4
 
-# Makes it so that pytest can handle the code structure we use, with src/main/python, and src/test.
-pytest-pythonpath
+# Coverage reports with pytest
+pytest-cov>=4.1.0,<5.0.0
 
-# Allows generation of coverage reports with pytest.
-pytest-cov
-
-# Allows marking tests as flaky, to be rerun if they fail
-# flaky
-
-# Allows codecov to generate coverage reports
-coverage
-# codecov
+# Coverage reporting
+coverage>=7.4.0,<8.0.0

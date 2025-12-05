@@ -30,7 +30,7 @@ function html_bootstrap3_createHeader($lang="en",$title="Welcome",$url_absolute=
         <!--link rel=\"stylesheet\" href=\"".$url_absolute."_assets/css/viewTree.css\"-->
 
         <!-- Latest compiled and minified JavaScript -->
-        <script src=\"".$url_absolute."_assets/js/jquery.1.12.4.min.js\"></script>
+        <script src=\"".$url_absolute."_assets/js/jquery-3.7.1.min.js\"></script>
         <script src=\"".$url_absolute."_assets/bootstrap-3/js/bootstrap.min.js\"></script>
         <script src=\"".$url_absolute."_assets/bootstrap-3/js/collapse.js\"></script>
         <script src=\"".$url_absolute."_assets/bootstrap-3/js/transition.js\"></script>
