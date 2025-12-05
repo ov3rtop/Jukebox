@@ -42,14 +42,14 @@ if [ "${DEBUG_inc_writeGlobalConfig_sh}" == "TRUE" ]; then echo "########### SCR
 if [ ! -f $PATHDATA/../settings/rfid_trigger_play.conf ]; then
     cp $PATHDATA/../settings/rfid_trigger_play.conf.sample $PATHDATA/../settings/rfid_trigger_play.conf
     # change the read/write so that later this might also be editable through the web app
-    sudo chown -R pi:www-data $PATHDATA/../settings/rfid_trigger_play.conf
+    sudo chown -R $(whoami):www-data $PATHDATA/../settings/rfid_trigger_play.conf
     sudo chmod -R 775 $PATHDATA/../settings/rfid_trigger_play.conf
 fi
 
 # Path to folder containing audio / streams
 # 1. create a default if file does not exist
 if [ ! -f $PATHDATA/../settings/Audio_Folders_Path ]; then
-    echo "/home/pi/RPi-Jukebox-RFID/shared/audiofolders" > $PATHDATA/../settings/Audio_Folders_Path
+    echo "$HOME/RPi-Jukebox-RFID/shared/audiofolders" > $PATHDATA/../settings/Audio_Folders_Path
     chmod 777 $PATHDATA/../settings/Audio_Folders_Path
 fi
 # 2. then|or read value from file
@@ -58,7 +58,7 @@ AUDIOFOLDERSPATH=`cat $PATHDATA/../settings/Audio_Folders_Path`
 # Path to folder containing playlists
 # 1. create a default if file does not exist
 if [ ! -f $PATHDATA/../settings/Playlists_Folders_Path ]; then
-    echo "/home/pi/RPi-Jukebox-RFID/playlists" > $PATHDATA/../settings/Playlists_Folders_Path
+    echo "/var/lib/mpd/playlists" > $PATHDATA/../settings/Playlists_Folders_Path
     chmod 777 $PATHDATA/../settings/Playlists_Folders_Path
 fi
 # 2. then|or read value from file
@@ -272,15 +272,13 @@ READWLANIPYN=`cat $PATHDATA/../settings/WlanIpReadYN`
 
 ##############################################
 # edition
-# read this always, do not write default
-
 # 1. create a default if file does not exist
-#if [ ! -f $PATHDATA/../settings/edition ]; then
-#    echo "classic" > $PATHDATA/../settings/edition
-#    chmod 777 $PATHDATA/../settings/edition
-#fi
+if [ ! -f $PATHDATA/../settings/edition ]; then
+    echo "classic" > $PATHDATA/../settings/edition
+    chmod 777 $PATHDATA/../settings/edition
+fi
 # 2. then|or read value from file
-chmod 777 $PATHDATA/../settings/edition
+chmod 777 $PATHDATA/../settings/edition 2>/dev/null || true
 EDITION=`cat $PATHDATA/../settings/edition`
 
 ##############################################
@@ -407,10 +405,10 @@ echo "CMDREWIND=\"${CMDREWIND}\"" >> "${PATHDATA}/../settings/global.conf"
 echo "CMDSEEKFORW=\"${CMDSEEKFORW}\"" >> "${PATHDATA}/../settings/global.conf"
 echo "CMDSEEKBACK=\"${CMDSEEKBACK}\"" >> "${PATHDATA}/../settings/global.conf"
 
-# Work in progress:
-#echo "MAILWLANIPYN=\"${MAILWLANIPYN}\"" >> "${PATHDATA}/../settings/global.conf"
-#echo "MAILWLANIPADDR=\"${MAILWLANIPADDR}\"" >> "${PATHDATA}/../settings/global.conf"
+# Mail WLAN IP settings
+echo "MAILWLANIPYN=\"${MAILWLANIPYN}\"" >> "${PATHDATA}/../settings/global.conf"
+echo "MAILWLANIPADDR=\"${MAILWLANIPADDR}\"" >> "${PATHDATA}/../settings/global.conf"
 
 # change the read/write so that later this might also be editable through the web app
-sudo chown -R pi:www-data ${PATHDATA}/../settings/global.conf
+sudo chown -R $(whoami):www-data ${PATHDATA}/../settings/global.conf
 sudo chmod -R 777 ${PATHDATA}/../settings/global.conf
