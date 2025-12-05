@@ -4,12 +4,11 @@
 # Für Raspberry Pi 3B mit Raspberry Pi OS Bookworm/Bullseye
 #
 # Verwendung:
-#   wget -O install.sh https://raw.githubusercontent.com/.../install-optimized.sh
-#   chmod +x install.sh
-#   ./install.sh
+#   ./install-optimized.sh
 #
 
-set -e
+# Nicht bei Fehler sofort abbrechen (wir behandeln Fehler manuell)
+# set -e
 
 # Farben für Output
 RED='\033[0;31m'
@@ -80,7 +79,7 @@ log_info "Installiere System-Pakete..."
 sudo apt install -y \
     samba samba-common-bin \
     gcc \
-    lighttpd php-common php-cgi php \
+    lighttpd php-fpm php-cgi php \
     at \
     mpd mpc mpg123 \
     git \
@@ -92,11 +91,12 @@ sudo apt install -y \
     python3 python3-dev python3-pip python3-venv \
     python3-setuptools python3-wheel python3-mutagen python3-spidev \
     swig \
-    tar unzip wget
+    tar unzip wget || log_warn "Einige Pakete konnten nicht installiert werden"
 
-# Raspberry Pi spezifische Pakete
-if [ -f /etc/rpi-issue ]; then
-    sudo apt install -y raspberrypi-kernel-headers || true
+# Raspberry Pi spezifische Pakete (optional, nicht kritisch)
+if [ -f /etc/rpi-issue ] || grep -q "Raspberry Pi" /proc/cpuinfo 2>/dev/null; then
+    log_info "Raspberry Pi erkannt, installiere spezifische Pakete..."
+    sudo apt install -y raspberrypi-kernel-headers 2>/dev/null || log_warn "raspberrypi-kernel-headers nicht verfügbar (nicht kritisch)"
 fi
 
 log_success "System-Pakete installiert"
@@ -105,9 +105,12 @@ log_success "System-Pakete installiert"
 log_info "Lade Phoniebox-Code..."
 if [ -d "$INSTALL_DIR/.git" ]; then
     cd "$INSTALL_DIR"
-    git pull
+    git pull || log_warn "Git pull fehlgeschlagen"
 else
-    git clone --depth 1 https://github.com/MiczFlor/RPi-Jukebox-RFID.git "$INSTALL_DIR"
+    git clone --depth 1 https://github.com/MiczFlor/RPi-Jukebox-RFID.git "$INSTALL_DIR" || {
+        log_error "Git clone fehlgeschlagen"
+        exit 1
+    }
 fi
 cd "$INSTALL_DIR"
 log_success "Code geladen"
@@ -118,8 +121,8 @@ python3 -m venv "$HOME_DIR/.venv/phoniebox"
 source "$HOME_DIR/.venv/phoniebox/bin/activate"
 
 pip install --upgrade pip
-pip install -r requirements.txt
-pip install -r requirements-GPIO.txt
+pip install -r requirements.txt || log_warn "Einige Python-Pakete konnten nicht installiert werden"
+pip install -r requirements-GPIO.txt || log_warn "GPIO-Pakete konnten nicht installiert werden"
 
 log_success "Python-Umgebung eingerichtet"
 
@@ -133,39 +136,94 @@ log_success "Verzeichnisse erstellt"
 
 # Lighttpd konfigurieren
 log_info "Konfiguriere Webserver..."
-sudo lighttpd-enable-mod fastcgi 2>/dev/null || true
-sudo lighttpd-enable-mod fastcgi-php 2>/dev/null || true
 
-# Lighttpd Konfiguration
-sudo tee /etc/lighttpd/conf-available/15-phoniebox.conf > /dev/null << EOF
-server.document-root = "$INSTALL_DIR/htdocs"
+# PHP-Version ermitteln
+PHP_VERSION=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;" 2>/dev/null || echo "8.2")
+log_info "PHP Version: $PHP_VERSION"
 
-# PHP FastCGI
+# Stoppe lighttpd während der Konfiguration
+sudo systemctl stop lighttpd 2>/dev/null || true
+
+# Alte Phoniebox-Konfiguration entfernen falls vorhanden
+sudo rm -f /etc/lighttpd/conf-enabled/15-phoniebox.conf 2>/dev/null || true
+sudo rm -f /etc/lighttpd/conf-available/15-phoniebox.conf 2>/dev/null || true
+
+# Backup der originalen Konfiguration
+if [ ! -f /etc/lighttpd/lighttpd.conf.backup ]; then
+    sudo cp /etc/lighttpd/lighttpd.conf /etc/lighttpd/lighttpd.conf.backup
+fi
+
+# Lighttpd Hauptkonfiguration erstellen
+sudo tee /etc/lighttpd/lighttpd.conf > /dev/null << EOF
+# Phoniebox Lighttpd Konfiguration
+server.modules = (
+    "mod_indexfile",
+    "mod_access",
+    "mod_alias",
+    "mod_redirect",
+)
+
+server.document-root        = "$INSTALL_DIR/htdocs"
+server.upload-dirs          = ( "/var/cache/lighttpd/uploads" )
+server.errorlog             = "/var/log/lighttpd/error.log"
+server.pid-file             = "/run/lighttpd.pid"
+server.username             = "www-data"
+server.groupname            = "www-data"
+server.port                 = 80
+
+# Zugriff auf versteckte Dateien verweigern
+url.access-deny             = ( "~", ".inc" )
+
+# Index-Dateien
+index-file.names            = ( "index.php", "index.html" )
+
+# MIME-Types
+include_shell "/usr/share/lighttpd/create-mime.conf.pl"
+
+# Module für FastCGI
+server.modules += ( "mod_fastcgi" )
+
+# PHP über FastCGI (PHP-FPM)
 fastcgi.server = ( ".php" => ((
-    "bin-path" => "/usr/bin/php-cgi",
-    "socket" => "/var/run/lighttpd/php.socket",
-    "max-procs" => 1,
-    "bin-environment" => (
-        "PHP_FCGI_CHILDREN" => "4",
-        "PHP_FCGI_MAX_REQUESTS" => "10000"
-    ),
-    "bin-copy-environment" => (
-        "PATH", "SHELL", "USER"
-    ),
+    "socket" => "/run/php/php${PHP_VERSION}-fpm.sock",
     "broken-scriptfilename" => "enable"
 )))
 EOF
 
-sudo ln -sf /etc/lighttpd/conf-available/15-phoniebox.conf /etc/lighttpd/conf-enabled/
-sudo systemctl restart lighttpd
-log_success "Webserver konfiguriert"
+# PHP-FPM Konfiguration anpassen
+PHP_FPM_CONF="/etc/php/${PHP_VERSION}/fpm/pool.d/www.conf"
+if [ -f "$PHP_FPM_CONF" ]; then
+    # Stelle sicher, dass der Socket existiert
+    sudo sed -i 's/^listen = .*/listen = \/run\/php\/php'"${PHP_VERSION}"'-fpm.sock/' "$PHP_FPM_CONF"
+    sudo sed -i 's/^;listen.owner = .*/listen.owner = www-data/' "$PHP_FPM_CONF"
+    sudo sed -i 's/^;listen.group = .*/listen.group = www-data/' "$PHP_FPM_CONF"
+    sudo sed -i 's/^;listen.mode = .*/listen.mode = 0660/' "$PHP_FPM_CONF"
+fi
+
+# Upload-Verzeichnis erstellen
+sudo mkdir -p /var/cache/lighttpd/uploads
+sudo chown www-data:www-data /var/cache/lighttpd/uploads
+
+# PHP-FPM neu starten
+sudo systemctl restart php${PHP_VERSION}-fpm 2>/dev/null || sudo systemctl restart php-fpm 2>/dev/null || log_warn "PHP-FPM konnte nicht gestartet werden"
+
+# Lighttpd starten
+sudo systemctl start lighttpd
+if sudo systemctl is-active --quiet lighttpd; then
+    log_success "Webserver konfiguriert und gestartet"
+else
+    log_error "Webserver konnte nicht gestartet werden!"
+    log_info "Prüfe Logs mit: sudo journalctl -xeu lighttpd.service"
+    log_info "Und: sudo lighttpd -t -f /etc/lighttpd/lighttpd.conf"
+fi
 
 # MPD konfigurieren
 log_info "Konfiguriere MPD..."
 sudo mkdir -p /var/lib/mpd/music
+sudo mkdir -p /var/lib/mpd/playlists
 sudo ln -sf "$SHARED_DIR/audiofolders" /var/lib/mpd/music/audiofolders 2>/dev/null || true
 
-# MPD Konfiguration anpassen
+# MPD Konfiguration
 sudo tee /etc/mpd.conf > /dev/null << 'EOF'
 music_directory     "/var/lib/mpd/music"
 playlist_directory  "/var/lib/mpd/playlists"
@@ -197,13 +255,13 @@ filesystem_charset  "UTF-8"
 EOF
 
 sudo systemctl restart mpd
-mpc update --wait
+mpc update --wait 2>/dev/null || true
 log_success "MPD konfiguriert"
 
 # Skripte ausführbar machen
 log_info "Setze Berechtigungen..."
-chmod +x "$INSTALL_DIR/scripts/"*.sh
-chmod +x "$INSTALL_DIR/scripts/"*.py
+chmod +x "$INSTALL_DIR/scripts/"*.sh 2>/dev/null || true
+chmod +x "$INSTALL_DIR/scripts/"*.py 2>/dev/null || true
 
 sudo chown -R "$USER":www-data "$INSTALL_DIR/htdocs"
 sudo chmod -R 775 "$INSTALL_DIR/htdocs"
@@ -213,6 +271,10 @@ sudo chown -R "$USER":www-data "$SHARED_DIR"
 sudo chmod -R 775 "$SHARED_DIR"
 sudo chown -R "$USER":www-data "$INSTALL_DIR/logs"
 sudo chmod -R 777 "$INSTALL_DIR/logs"
+
+# www-data Benutzer zur Gruppe des aktuellen Users hinzufügen
+sudo usermod -a -G "$USER" www-data 2>/dev/null || true
+
 log_success "Berechtigungen gesetzt"
 
 # Systemd-Services einrichten
@@ -277,16 +339,15 @@ EOF
 sudo systemctl daemon-reload
 sudo systemctl enable phoniebox-rfid-reader.service
 sudo systemctl enable phoniebox-idle-watchdog.service
-# GPIO Service nur aktivieren, wenn eine Konfiguration existiert
-if [ -f "$SETTINGS_DIR/gpio_settings.ini" ]; then
-    sudo systemctl enable phoniebox-gpio-control.service
-fi
 
 log_success "Systemd-Services eingerichtet"
 
 # Samba konfigurieren
 log_info "Konfiguriere Samba..."
-sudo tee -a /etc/samba/smb.conf > /dev/null << EOF
+
+# Prüfe ob Phoniebox-Share bereits existiert
+if ! grep -q "\[phoniebox\]" /etc/samba/smb.conf 2>/dev/null; then
+    sudo tee -a /etc/samba/smb.conf > /dev/null << EOF
 
 [phoniebox]
    comment = Phoniebox
@@ -299,8 +360,9 @@ sudo tee -a /etc/samba/smb.conf > /dev/null << EOF
    force user = $USER
    force group = www-data
 EOF
+fi
 
-sudo systemctl restart smbd
+sudo systemctl restart smbd 2>/dev/null || sudo systemctl restart smb 2>/dev/null || log_warn "Samba konnte nicht gestartet werden"
 log_success "Samba konfiguriert"
 
 # Standard-Konfigurationsdateien erstellen
@@ -320,24 +382,34 @@ echo "/var/lib/mpd/playlists" > "$SETTINGS_DIR/Playlists_Folders_Path" 2>/dev/nu
 
 # Global config generieren
 cd "$INSTALL_DIR/scripts"
-./inc.writeGlobalConfig.sh
+if [ -f "./inc.writeGlobalConfig.sh" ]; then
+    chmod +x ./inc.writeGlobalConfig.sh
+    ./inc.writeGlobalConfig.sh 2>/dev/null || log_warn "Global config konnte nicht erstellt werden"
+fi
 log_success "Konfigurationsdateien erstellt"
 
-# Startup-Skript einrichten
+# Startup-Skript einrichten (optional)
 log_info "Richte Autostart ein..."
-sudo tee /etc/rc.local > /dev/null << EOF
+if [ -f /etc/rc.local ]; then
+    # Prüfe ob bereits eingetragen
+    if ! grep -q "startup-scripts.sh" /etc/rc.local 2>/dev/null; then
+        sudo sed -i "/^exit 0/i $INSTALL_DIR/scripts/startup-scripts.sh &" /etc/rc.local 2>/dev/null || true
+    fi
+else
+    sudo tee /etc/rc.local > /dev/null << EOF
 #!/bin/sh -e
 # Phoniebox Startup
 $INSTALL_DIR/scripts/startup-scripts.sh &
 exit 0
 EOF
-sudo chmod +x /etc/rc.local
+    sudo chmod +x /etc/rc.local
+fi
 log_success "Autostart eingerichtet"
 
 # Services starten
 log_info "Starte Services..."
-sudo systemctl start phoniebox-rfid-reader.service
-sudo systemctl start phoniebox-idle-watchdog.service
+sudo systemctl start phoniebox-rfid-reader.service 2>/dev/null || log_warn "RFID-Service konnte nicht gestartet werden (evtl. kein Reader angeschlossen)"
+sudo systemctl start phoniebox-idle-watchdog.service 2>/dev/null || log_warn "Idle-Watchdog konnte nicht gestartet werden"
 log_success "Services gestartet"
 
 # IP-Adresse ermitteln
@@ -352,16 +424,20 @@ echo "║                                                               ║"
 echo "╚═══════════════════════════════════════════════════════════════╝"
 echo ""
 echo "📍 Web-Interface erreichbar unter:"
-echo "   http://phoniebox.local"
+echo "   http://$(hostname).local"
 echo "   http://$IP_ADDR"
 echo ""
 echo "📁 Audio-Dateien ablegen in:"
 echo "   $SHARED_DIR/audiofolders"
-echo "   Oder über Samba: \\\\phoniebox\\phoniebox"
+echo "   Oder über Samba: \\\\$(hostname)\\phoniebox"
 echo ""
 echo "📖 Anleitung: $INSTALL_DIR/INSTALL-Pi3B.md"
+echo ""
+echo "🔧 Bei Problemen:"
+echo "   sudo systemctl status lighttpd"
+echo "   sudo systemctl status php${PHP_VERSION}-fpm"
+echo "   sudo journalctl -xeu lighttpd.service"
 echo ""
 echo "⚠️  Ein Neustart wird empfohlen:"
 echo "   sudo reboot"
 echo ""
-
