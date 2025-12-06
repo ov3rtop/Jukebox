@@ -31,10 +31,12 @@ id,value
 */
 
 $conf = array();
-$conf['path2presetCSV']         = "/home/pi/RPi-Jukebox-RFID/misc/presets.csv"; // absolute path to CSV file with IDs
-$conf['path2shortcuts']         = "/home/pi/RPi-Jukebox-RFID/shared/shortcuts"; // absolute path to shortcuts folder, no trailing slash
-$conf['path2bashdaemonsource']  = "/home/pi/RPi-Jukebox-RFID/scripts/rfid_trigger_play.sh.sample"; // absolute path to sample file for daemon script
-$conf['path2bashdaemontarget']  = "/home/pi/RPi-Jukebox-RFID/scripts/rfid_trigger_play.sh"; // absolute path to target where daemon script needs to live
+// Auto-detect base directory from script location
+$baseDir = dirname(dirname(dirname(__FILE__)));
+$conf['path2presetCSV']         = $baseDir . "/misc/presets.csv"; // absolute path to CSV file with IDs
+$conf['path2shortcuts']         = $baseDir . "/shared/shortcuts"; // absolute path to shortcuts folder, no trailing slash
+$conf['path2bashdaemonsource']  = $baseDir . "/scripts/rfid_trigger_play.sh.sample"; // absolute path to sample file for daemon script
+$conf['path2bashdaemontarget']  = $baseDir . "/scripts/rfid_trigger_play.sh"; // absolute path to target where daemon script needs to live
 
 $csvarray = csv_read_file2array($conf['path2presetCSV'], TRUE);
 $bashfind = array(); // the value pairs that will be replaced in the bash script

@@ -1,13 +1,14 @@
 [Unit]
-Description=Phoniebox Bluetooth Buttons Service
+Description=Phoniebox Bluetooth Buttons
 After=mpd.service
 
 [Service]
-User=pi
-Group=pi
+User=%USER%
+Group=%USER%
 Restart=always
-WorkingDirectory=/home/pi/RPi-Jukebox-RFID/components/controls/buttons-bluetooth-headphone
-ExecStart=/home/pi/RPi-Jukebox-RFID/components/controls/buttons-bluetooth-headphone/bt-buttons.py
+RestartSec=5
+WorkingDirectory=%INSTALL_DIR%/components/controls/buttons-bluetooth-headphone
+ExecStart=%VENV_PATH%/bin/python3 %INSTALL_DIR%/components/controls/buttons-bluetooth-headphone/bt-buttons.py
 
 [Install]
 WantedBy=multi-user.target

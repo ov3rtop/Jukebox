@@ -19,8 +19,10 @@
 */
 
 $conf = array();
-$conf['path2shortcuts'] = "/home/pi/RPi-Jukebox-RFID/shared/shortcuts"; // no trailing slash
-$conf['path2csvtarget'] = "/home/pi/RPi-Jukebox-RFID/misc/shortcuts-backup.csv"; // absolute path to target
+// Auto-detect base directory from script location
+$baseDir = dirname(dirname(dirname(__FILE__)));
+$conf['path2shortcuts'] = $baseDir . "/shared/shortcuts"; // no trailing slash
+$conf['path2csvtarget'] = $baseDir . "/misc/shortcuts-backup.csv"; // absolute path to target
 
 
 // read the shortcuts used

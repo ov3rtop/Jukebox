@@ -43,7 +43,7 @@ if [ "${DEBUG_rfid_trigger_play_sh}" == "TRUE" ]; then echo "########### SCRIPT 
 if [ ! -f $PATHDATA/../settings/rfid_trigger_play.conf ]; then
     cp $PATHDATA/../settings/rfid_trigger_play.conf.sample $PATHDATA/../settings/rfid_trigger_play.conf
     # change the read/write so that later this might also be editable through the web app
-    sudo chown -R pi:www-data $PATHDATA/../settings/rfid_trigger_play.conf
+    sudo chown -R $(whoami):www-data $PATHDATA/../settings/rfid_trigger_play.conf
     sudo chmod -R 775 $PATHDATA/../settings/rfid_trigger_play.conf
 fi
 

@@ -129,7 +129,9 @@ class GPIOControl():
 
 if __name__ == "__main__":
     config = configparser.ConfigParser(inline_comment_prefixes=";", delimiters=(':', '='))
-    config_path = os.path.expanduser('/home/pi/RPi-Jukebox-RFID/settings/gpio_settings.ini')
+    # Auto-detect base directory from script location
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    config_path = os.path.join(base_dir, 'settings', 'gpio_settings.ini')
     config.read(config_path)
 
     ConfigCompatibilityChecks(config, config_path)

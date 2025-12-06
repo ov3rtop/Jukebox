@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
-HOME_DIR="/home/pi"
-JUKEBOX_HOME_DIR="${HOME_DIR}/RPi-Jukebox-RFID"
+# Auto-detect paths
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+JUKEBOX_HOME_DIR="$( cd "$SCRIPT_DIR/../../.." && pwd )"
+CURRENT_USER="${SUDO_USER:-$(whoami)}"
 
 question() {
     local question=$1
@@ -12,6 +14,8 @@ question() {
     esac
 }
 
+printf "Phoniebox directory: %s\n" "$JUKEBOX_HOME_DIR"
+printf "Current user: %s\n" "$CURRENT_USER"
 printf "Please make sure that the RC522 reader is wired up correctly to the GPIO ports before continuing...\n"
 question "Continue"
 
@@ -31,7 +35,7 @@ sudo raspi-config nonint do_spi 0
 printf "Configure RFID reader in Phoniebox...\n"
 cp "${JUKEBOX_HOME_DIR}"/scripts/Reader.py.experimental "${JUKEBOX_HOME_DIR}"/scripts/Reader.py
 printf "MFRC522" > "${JUKEBOX_HOME_DIR}"/scripts/deviceName.txt
-sudo chown pi:www-data "${JUKEBOX_HOME_DIR}"/scripts/deviceName.txt
+sudo chown ${CURRENT_USER}:www-data "${JUKEBOX_HOME_DIR}"/scripts/deviceName.txt
 sudo chmod 644 "${JUKEBOX_HOME_DIR}"/scripts/deviceName.txt
 
 printf "Restarting phoniebox-rfid-reader service...\n"

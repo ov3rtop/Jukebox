@@ -1,13 +1,15 @@
-[Unit]  
-Description=LCD Matrix Display Service
-After=network.target phoniebox-rfid-reader.service
+[Unit]
+Description=Phoniebox I2C LCD Display
+After=mpd.service
 
 [Service]
-User=pi
-Group=pi
+User=%USER%
+Group=%USER%
+Type=simple
 Restart=always
-WorkingDirectory=/home/pi/RPi-Jukebox-RFID
-ExecStart=/home/pi/RPi-Jukebox-RFID/components/displays/HD44780-i2c/i2c_lcd.py
+RestartSec=5
+WorkingDirectory=%INSTALL_DIR%
+ExecStart=%VENV_PATH%/bin/python3 %INSTALL_DIR%/components/displays/HD44780-i2c/i2c_lcd.py
 
 [Install]
 WantedBy=multi-user.target

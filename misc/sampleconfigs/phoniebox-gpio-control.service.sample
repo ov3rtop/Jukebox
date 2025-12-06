@@ -1,13 +1,13 @@
 [Unit]
-Description=Phoniebox GPIO Control Service
-After=network.target iptables.service firewalld.service
+Description=Phoniebox GPIO Control
+After=network.target
 
 [Service]
 Type=simple
-User=pi
-Group=pi
-WorkingDirectory=/home/pi/RPi-Jukebox-RFID/components/gpio_control/
-ExecStart=/home/pi/RPi-Jukebox-RFID/components/gpio_control/gpio_control.py
+User=%USER%
+Group=%USER%
+WorkingDirectory=%INSTALL_DIR%/components/gpio_control/
+ExecStart=%VENV_PATH%/bin/python3 %INSTALL_DIR%/components/gpio_control/gpio_control.py
 SyslogIdentifier=PhonieboxGPIOControl
 StandardOutput=syslog
 StandardError=syslog

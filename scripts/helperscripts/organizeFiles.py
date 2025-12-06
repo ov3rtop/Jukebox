@@ -171,7 +171,8 @@ def findDuplicateShortcuts(shortcuts):
 
 
 if __name__ == "__main__":
-    baseDir = "/home/pi/RPi-Jukebox-RFID"
+    # Auto-detect base directory from script location
+    baseDir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     latestRFIDFile = os.path.join(baseDir, "settings", "Latest_RFID")
     shortcutsDir = os.path.join(baseDir, "shared", "shortcuts")
     audioDir = os.path.join(baseDir, "shared", "audiofolders")

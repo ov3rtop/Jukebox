@@ -8,7 +8,8 @@ from organizeFiles import readFolders
 
 
 if __name__ == "__main__":
-    baseDir = "/home/pi/RPi-Jukebox-RFID"
+    # Auto-detect base directory from script location
+    baseDir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     shortcutsDir = os.path.join(baseDir, "shared", "shortcuts")
     audioDir = os.path.join(baseDir, "shared", "audiofolders")
     scriptsDir = os.path.join(baseDir, "scripts")

@@ -1,14 +1,14 @@
 [Unit]
-Description=Phoniebox Startup
+Description=Phoniebox Startup Scripts
 After=mpd.service
 
 [Service]
-User=pi
-Group=pi
+User=%USER%
+Group=%USER%
 Type=oneshot
 RemainAfterExit=true
-WorkingDirectory=/home/pi/RPi-Jukebox-RFID
-ExecStart=/bin/bash /home/pi/RPi-Jukebox-RFID/scripts/startup-scripts.sh
+WorkingDirectory=%INSTALL_DIR%
+ExecStart=/bin/bash %INSTALL_DIR%/scripts/startup-scripts.sh
 
 [Install]
 WantedBy=multi-user.target

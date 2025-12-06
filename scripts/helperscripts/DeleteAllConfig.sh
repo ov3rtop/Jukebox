@@ -1,7 +1,12 @@
 #!/bin/bash
 
+# Get the base directory dynamically
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+BASE_DIR="$( cd "$SCRIPT_DIR/../.." && pwd )"
+
 echo "This script will delete all config files"
 echo "including mpd.conf and the like."
+echo "Base directory: $BASE_DIR"
 read -r -p "Do you want to proceed? [y/N] " response
 case "$response" in
     [Yy][Ee][Ss]|[Yy])
@@ -19,22 +24,22 @@ sudo rm /etc/sudoers.d/mopidy
 #sudo rm /etc/samba/smb.conf
 
 # these ones we will leave
-#sudo rm /home/pi/RPi-Jukebox-RFID/htdocs/config.php
-#sudo rm /home/pi/RPi-Jukebox-RFID/settings/rfid_trigger_play.conf
+#sudo rm $BASE_DIR/htdocs/config.php
+#sudo rm $BASE_DIR/settings/rfid_trigger_play.conf
 
 # these ones we delete
 sudo rm /etc/lighttpd/lighttpd.conf
 sudo rm /etc/lighttpd/conf-available/15-fastcgi-php.conf
-sudo rm /etc/php/7.0/fpm/php.ini
-sudo rm /home/pi/RPi-Jukebox-RFID/settings/Audio_iFace_Name
-sudo rm /home/pi/RPi-Jukebox-RFID/settings/Audio_Folders_Path
-sudo rm /home/pi/RPi-Jukebox-RFID/settings/Audio_Volume_Change_Step
-sudo rm /home/pi/RPi-Jukebox-RFID/settings/Max_Volume_Limit
-sudo rm /home/pi/RPi-Jukebox-RFID/settings/Idle_Time_Before_Shutdown
-sudo rm /home/pi/RPi-Jukebox-RFID/settings/Second_Swipe
-sudo rm /home/pi/RPi-Jukebox-RFID/settings/Playlists_Folders_Path
-sudo rm /home/pi/RPi-Jukebox-RFID/settings/ShowCover
-sudo rm /home/pi/RPi-Jukebox-RFID/scripts/gpio-buttons.py
+sudo rm /etc/php/*/fpm/php.ini 2>/dev/null
+sudo rm $BASE_DIR/settings/Audio_iFace_Name
+sudo rm $BASE_DIR/settings/Audio_Folders_Path
+sudo rm $BASE_DIR/settings/Audio_Volume_Change_Step
+sudo rm $BASE_DIR/settings/Max_Volume_Limit
+sudo rm $BASE_DIR/settings/Idle_Time_Before_Shutdown
+sudo rm $BASE_DIR/settings/Second_Swipe
+sudo rm $BASE_DIR/settings/Playlists_Folders_Path
+sudo rm $BASE_DIR/settings/ShowCover
+sudo rm $BASE_DIR/scripts/gpio-buttons.py
 sudo rm /etc/systemd/system/phoniebox-rfid-reader.service
 sudo rm /etc/systemd/system/phoniebox-startup-sound.service
 sudo rm /etc/systemd/system/phoniebox-gpio-buttons.service

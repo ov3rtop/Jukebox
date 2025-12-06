@@ -1,13 +1,15 @@
-[Unit]  
-Description=Phoniebox Idle Watchdog Service
-After=network.target iptables.service firewalld.service
+[Unit]
+Description=Phoniebox Idle Watchdog
+After=network.target
 
 [Service]
-User=pi
-Group=pi
+User=%USER%
+Group=%USER%
 Type=simple
-WorkingDirectory=/home/pi/RPi-Jukebox-RFID
-ExecStart=/home/pi/RPi-Jukebox-RFID/scripts/idle-watchdog.sh
+Restart=always
+RestartSec=5
+WorkingDirectory=%INSTALL_DIR%
+ExecStart=%INSTALL_DIR%/scripts/idle-watchdog.sh
 
 [Install]
 WantedBy=multi-user.target

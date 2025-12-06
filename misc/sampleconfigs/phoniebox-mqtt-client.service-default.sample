@@ -1,5 +1,5 @@
 [Unit]
-Description=Phoniebox Amplifier Activation
+Description=Phoniebox MQTT Client
 After=network.target
 
 [Service]
@@ -8,7 +8,8 @@ Group=%USER%
 Restart=always
 RestartSec=5
 WorkingDirectory=%INSTALL_DIR%
-ExecStart=%VENV_PATH%/bin/python3 %INSTALL_DIR%/scripts/activate_amplifier.py
+ExecStart=%VENV_PATH%/bin/python3 %INSTALL_DIR%/scripts/daemon_mqtt_client.py
 
 [Install]
 WantedBy=multi-user.target
+

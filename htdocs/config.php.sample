@@ -2,7 +2,8 @@
 
 $conf               = array();
 $conf['base_url']   = ""; // usually => "", generally: end with trailing slash
-$conf['base_path']  = "/home/pi/RPi-Jukebox-RFID"; // absolute path to folder
+// Auto-detect base path from this file's location
+$conf['base_path']  = dirname(__DIR__); // absolute path to folder (auto-detected)
 $conf['local_url']  = $_SERVER['SERVER_NAME']; // put the fixed IP or Local name here
 
 ?>

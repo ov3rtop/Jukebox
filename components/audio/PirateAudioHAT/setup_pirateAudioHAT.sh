@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
-HOME_DIR="/home/pi"
-JUKEBOX_HOME_DIR="${HOME_DIR}/RPi-Jukebox-RFID"
+# Auto-detect paths
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+JUKEBOX_HOME_DIR="$( cd "$SCRIPT_DIR/../../.." && pwd )"
+CURRENT_USER="${SUDO_USER:-$(whoami)}"
 
 source "${JUKEBOX_HOME_DIR}"/scripts/helperscripts/inc.systemHelper.sh
 
@@ -14,13 +16,14 @@ question() {
     esac
 }
 
+printf "Phoniebox directory: %s\n" "$JUKEBOX_HOME_DIR"
+printf "Current user: %s\n" "$CURRENT_USER"
 printf "Please make sure that the Pirate Audio HAT is connected...\n"
 question "Continue"
 
 printf "Stopping and disabling GPIO control service...\n"
-#TODO this might not be necessary
-sudo systemctl stop phoniebox-gpio-control.service
-sudo systemctl disable phoniebox-gpio-control.service
+sudo systemctl stop phoniebox-gpio-control.service 2>/dev/null
+sudo systemctl disable phoniebox-gpio-control.service 2>/dev/null
 
 boot_config_path=$(get_boot_config_path)
 boot_config_path_backup="${boot_config_path}.bak"
