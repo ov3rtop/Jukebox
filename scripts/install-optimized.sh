@@ -452,6 +452,23 @@ VOLUME="ACTIVE_VOLUME"
 RFIDEOF
 fi
 
+# config.php erstellen (wichtig für Webinterface!)
+cat > "$INSTALL_DIR/htdocs/config.php" << CONFIGEOF
+<?php
+
+\$conf               = array();
+\$conf['base_url']   = ""; // usually => "", generally: end with trailing slash
+\$conf['base_path']  = "$INSTALL_DIR"; // absolute path to folder
+\$conf['local_url']  = \$_SERVER['SERVER_NAME']; // put the fixed IP or Local name here
+
+?>
+CONFIGEOF
+log_info "config.php erstellt mit Pfad: $INSTALL_DIR"
+
+# latestID.txt erstellen (für RFID-Karten-Anzeige im Webinterface)
+touch "$SHARED_DIR/latestID.txt"
+chmod 666 "$SHARED_DIR/latestID.txt"
+
 # Berechtigungen für Settings setzen
 sudo chown -R "$USER":www-data "$SETTINGS_DIR"
 sudo chmod -R 775 "$SETTINGS_DIR"
