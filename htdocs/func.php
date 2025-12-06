@@ -31,6 +31,7 @@ function html_bootstrap3_createHeader($lang="en",$title="Welcome",$url_absolute=
 
         <!-- Latest compiled and minified JavaScript -->
         <script src=\"".$url_absolute."_assets/js/jquery-3.7.1.min.js\"></script>
+        <script src=\"".$url_absolute."_assets/js/jquery-migrate-3.4.1.min.js\"></script>
         <script src=\"".$url_absolute."_assets/bootstrap-3/js/bootstrap.min.js\"></script>
         <script src=\"".$url_absolute."_assets/bootstrap-3/js/collapse.js\"></script>
         <script src=\"".$url_absolute."_assets/bootstrap-3/js/transition.js\"></script>
