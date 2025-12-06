@@ -57,7 +57,7 @@ string = ''.join(extract)
 
 # if controlcards delay is deactivated, let the cards pass, otherwise, they have to wait...
 if sspc_nodelay == "ON":
-    ids = re.findall("(\d+)", string) # noqa W605
+    ids = re.findall(r"(\d+)", string)
 else:
     ids = ""
 
