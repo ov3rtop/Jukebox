@@ -1149,5 +1149,9 @@ case $COMMAND in
     *)
         echo Unknown COMMAND $COMMAND VALUE $VALUE
         if [ "${DEBUG_playout_controls_sh}" == "TRUE" ]; then echo "Unknown COMMAND ${COMMAND} VALUE ${VALUE}" >> ${PATHDATA}/../logs/debug.log; fi
+        exit 1
         ;;
 esac
+
+# Exit successfully if we reached this point
+exit 0
