@@ -2,10 +2,11 @@
 namespace JukeBox\Api;
 
 function execAndEcho($command) {
+    global $debugLoggingConf;
     $output = execScript($command);
     $result = implode('\n', $output); 
     echo $result;
-    if($debugLoggingConf['DEBUG_WebApp_API'] == "TRUE") {
+    if(isset($debugLoggingConf['DEBUG_WebApp_API']) && $debugLoggingConf['DEBUG_WebApp_API'] == "TRUE") {
         file_put_contents("../../logs/debug.log", "\n  # function execAndEcho: " . $result , FILE_APPEND | LOCK_EX);
     }
 }
@@ -17,7 +18,7 @@ function execScript($command) {
 
 function execScriptWithoutCheck($command) {
     global $debugLoggingConf;
-    if($debugLoggingConf['DEBUG_WebApp_API'] == "TRUE") {
+    if(isset($debugLoggingConf['DEBUG_WebApp_API']) && $debugLoggingConf['DEBUG_WebApp_API'] == "TRUE") {
         file_put_contents("../../logs/debug.log", "\n  # function execScriptWithoutCheck: " . $command , FILE_APPEND | LOCK_EX);
     }
     $absoluteCommand = realpath(dirname(__FILE__) .'/../../scripts') ."/{$command}";
@@ -26,7 +27,7 @@ function execScriptWithoutCheck($command) {
 
 function execSuccessfully($command) {    
     global $debugLoggingConf;
-    if($debugLoggingConf['DEBUG_WebApp_API'] == "TRUE") {
+    if(isset($debugLoggingConf['DEBUG_WebApp_API']) && $debugLoggingConf['DEBUG_WebApp_API'] == "TRUE") {
         file_put_contents("../../logs/debug.log", "\n  # function execSuccessfully: " . $command , FILE_APPEND | LOCK_EX);
     }
 
@@ -46,6 +47,7 @@ function execMPDCommand($command) {
     socket_write($socket, $command, strlen($command));
     socket_shutdown ($socket,1);
     $output = array();
+    $outputTemp = '';
     while ($out = socket_read($socket, 2048)) {
          $outputTemp .= $out;
     }
