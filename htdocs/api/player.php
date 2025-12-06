@@ -11,10 +11,10 @@ include 'common.php';
 * debug? Conf file line:
 * DEBUG_WebApp_API="TRUE"
 */
-$debugLoggingConf = parse_ini_file("../../settings/debugLogging.conf");
-$globalConf = parse_ini_file("../../settings/global.conf");
+$debugLoggingConf = parse_ini_file("../../settings/debugLogging.conf") ?: [];
+$globalConf = parse_ini_file("../../settings/global.conf") ?: [];
 
-if ($debugLoggingConf['DEBUG_WebApp_API'] == "TRUE") {
+if (isset($debugLoggingConf['DEBUG_WebApp_API']) && $debugLoggingConf['DEBUG_WebApp_API'] == "TRUE") {
     file_put_contents("../../logs/debug.log", "\n# WebApp API # " . __FILE__, FILE_APPEND | LOCK_EX);
     file_put_contents("../../logs/debug.log", "\n  # \$_SERVER['REQUEST_METHOD']: " . $_SERVER['REQUEST_METHOD'], FILE_APPEND | LOCK_EX);
 }
@@ -28,16 +28,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
 
 function handlePut() {
     global $debugLoggingConf;
-    if ($debugLoggingConf['DEBUG_WebApp_API'] == "TRUE") {
+    if (isset($debugLoggingConf['DEBUG_WebApp_API']) && $debugLoggingConf['DEBUG_WebApp_API'] == "TRUE") {
         file_put_contents("../../logs/debug.log", "\n  # function handlePut() ", FILE_APPEND | LOCK_EX);
     }
 
     $body = file_get_contents('php://input');
     $json = json_decode(trim($body), TRUE);
-    if ($debugLoggingConf['DEBUG_WebApp_API'] == "TRUE") {
-        file_put_contents("../../logs/debug.log", "\n  # \$json['command']:" . $json['command'], FILE_APPEND | LOCK_EX);
+    if (isset($debugLoggingConf['DEBUG_WebApp_API']) && $debugLoggingConf['DEBUG_WebApp_API'] == "TRUE") {
+        file_put_contents("../../logs/debug.log", "\n  # \$json['command']:" . ($json['command'] ?? 'null'), FILE_APPEND | LOCK_EX);
     }
-    $inputCommand = $json['command'];
+    $inputCommand = $json['command'] ?? null;
     $inputValue = $json['value'] ?? "";
     if ($inputCommand != null) {
         $controlsCommand = determineCommand($inputCommand);
@@ -64,15 +64,15 @@ function handleGet() {
     }
     
     // get volume separately from mpd, because we might use amixer to control volume
-    if ($globalConf['VOLUMEMANAGER'] != "mpd"){
+    if (isset($globalConf['VOLUMEMANAGER']) && $globalConf['VOLUMEMANAGER'] != "mpd"){
         $command = "playout_controls.sh -c=getvolume";
         $output = execScript($command);
         $responseList['volume'] = implode('\n', $output);
     }
 
     // get chapter info if file extension indicates supports
-    $fileExtension = pathinfo ( $responseList['file'], PATHINFO_EXTENSION);         
-    if (in_array($fileExtension, explode(',', $globalConf['CHAPTEREXTENSIONS']))) {
+    $fileExtension = pathinfo($responseList['file'] ?? '', PATHINFO_EXTENSION);         
+    if (isset($globalConf['CHAPTEREXTENSIONS']) && in_array($fileExtension, explode(',', $globalConf['CHAPTEREXTENSIONS']))) {
         $command = "playout_controls.sh -c=getchapters";
         $output = execScript($command);
         $jsonChapters = trim(implode("\n", $output));
@@ -98,7 +98,7 @@ function handleGet() {
 
     $responseList['chapters'] = $mappedChapters;
 
-    if ($debugLoggingConf['DEBUG_WebApp_API'] == "TRUE") {
+    if (isset($debugLoggingConf['DEBUG_WebApp_API']) && $debugLoggingConf['DEBUG_WebApp_API'] == "TRUE") {
         file_put_contents("../../logs/debug.log", "\n  # function handleGet() ", FILE_APPEND | LOCK_EX);
         file_put_contents("../../logs/debug.log", "\n\$responseList: " . json_encode($responseList) . $_SERVER['REQUEST_METHOD'], FILE_APPEND | LOCK_EX);
     }

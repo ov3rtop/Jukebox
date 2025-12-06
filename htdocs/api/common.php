@@ -34,7 +34,7 @@ function execSuccessfully($command) {
     exec("sudo ".$command, $output, $rc);
     if ($rc != 0) {
         $formattedOutput = implode('\n', $output);
-        echo "Execution failed\nCommand: {$command}\nOutput: {$formattedOutput}\nRC: .${rc}";
+        echo "Execution failed\nCommand: {$command}\nOutput: {$formattedOutput}\nRC: {$rc}";
         http_response_code(500);
         exit();
     }  
