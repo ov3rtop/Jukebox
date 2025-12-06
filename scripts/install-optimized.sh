@@ -207,7 +207,8 @@ sudo chown www-data:www-data /var/cache/lighttpd/uploads
 # PHP-FPM neu starten
 sudo systemctl restart php${PHP_VERSION}-fpm 2>/dev/null || sudo systemctl restart php-fpm 2>/dev/null || log_warn "PHP-FPM konnte nicht gestartet werden"
 
-# Lighttpd starten
+# Lighttpd aktivieren und starten
+sudo systemctl enable lighttpd
 sudo systemctl start lighttpd
 if sudo systemctl is-active --quiet lighttpd; then
     log_success "Webserver konfiguriert und gestartet"
@@ -216,6 +217,9 @@ else
     log_info "Prüfe Logs mit: sudo journalctl -xeu lighttpd.service"
     log_info "Und: sudo lighttpd -t -f /etc/lighttpd/lighttpd.conf"
 fi
+
+# PHP-FPM aktivieren
+sudo systemctl enable php${PHP_VERSION}-fpm 2>/dev/null || sudo systemctl enable php-fpm 2>/dev/null || true
 
 # MPD konfigurieren
 log_info "Konfiguriere MPD..."
@@ -254,14 +258,28 @@ audio_output {
 filesystem_charset  "UTF-8"
 EOF
 
+# MPD-Verzeichnisse Berechtigungen
+sudo mkdir -p /var/log/mpd
+sudo mkdir -p /run/mpd
+sudo chown -R mpd:audio /var/lib/mpd
+sudo chown -R mpd:audio /var/log/mpd
+
+# MPD für Autostart aktivieren und starten
+sudo systemctl enable mpd
 sudo systemctl restart mpd
+
+# Warten bis MPD bereit ist und Datenbank aktualisieren
+sleep 2
 mpc update --wait 2>/dev/null || true
-log_success "MPD konfiguriert"
+log_success "MPD konfiguriert und aktiviert"
 
 # Skripte ausführbar machen
 log_info "Setze Berechtigungen..."
 chmod +x "$INSTALL_DIR/scripts/"*.sh 2>/dev/null || true
 chmod +x "$INSTALL_DIR/scripts/"*.py 2>/dev/null || true
+
+# WICHTIG: Home-Verzeichnis muss für www-data lesbar sein!
+chmod 755 "$HOME_DIR"
 
 sudo chown -R "$USER":www-data "$INSTALL_DIR/htdocs"
 sudo chmod -R 775 "$INSTALL_DIR/htdocs"
@@ -272,10 +290,21 @@ sudo chmod -R 775 "$SHARED_DIR"
 sudo chown -R "$USER":www-data "$INSTALL_DIR/logs"
 sudo chmod -R 777 "$INSTALL_DIR/logs"
 
-# www-data Benutzer zur Gruppe des aktuellen Users hinzufügen
+# www-data und mpd Benutzer zur Gruppe des aktuellen Users hinzufügen
 sudo usermod -a -G "$USER" www-data 2>/dev/null || true
+sudo usermod -a -G "$USER" mpd 2>/dev/null || true
+sudo usermod -a -G www-data mpd 2>/dev/null || true
 
 log_success "Berechtigungen gesetzt"
+
+# Sudoers-Konfiguration für www-data (WICHTIG für Web-Interface!)
+log_info "Konfiguriere sudo-Berechtigungen für www-data..."
+sudo tee /etc/sudoers.d/www-data > /dev/null << 'EOF'
+# Phoniebox - www-data darf Scripts ohne Passwort ausführen
+www-data ALL=(ALL) NOPASSWD: ALL
+EOF
+sudo chmod 440 /etc/sudoers.d/www-data
+log_success "Sudo-Berechtigungen konfiguriert"
 
 # Systemd-Services einrichten
 log_info "Richte Systemd-Services ein..."
@@ -368,17 +397,65 @@ log_success "Samba konfiguriert"
 # Standard-Konfigurationsdateien erstellen
 log_info "Erstelle Konfigurationsdateien..."
 
+# Settings-Verzeichnis sicherstellen
+mkdir -p "$SETTINGS_DIR"
+
 # Settings initialisieren
-echo "FALSE" > "$SETTINGS_DIR/Second_Swipe_Pause" 2>/dev/null || true
-echo "OFF" > "$SETTINGS_DIR/Second_Swipe_Pause_Controls" 2>/dev/null || true
-echo "SWIPENOTPLACE" > "$SETTINGS_DIR/Swipe_or_Place" 2>/dev/null || true
-echo "100" > "$SETTINGS_DIR/Max_Volume_Limit" 2>/dev/null || true
-echo "30" > "$SETTINGS_DIR/Startup_Volume" 2>/dev/null || true
-echo "0" > "$SETTINGS_DIR/Volume_Boot" 2>/dev/null || true
-echo "3" > "$SETTINGS_DIR/Audio_Volume_Change_Step" 2>/dev/null || true
-echo "0" > "$SETTINGS_DIR/Idle_Time_Before_Shutdown" 2>/dev/null || true
-echo "$SHARED_DIR/audiofolders" > "$SETTINGS_DIR/Audio_Folders_Path" 2>/dev/null || true
-echo "/var/lib/mpd/playlists" > "$SETTINGS_DIR/Playlists_Folders_Path" 2>/dev/null || true
+echo "FALSE" > "$SETTINGS_DIR/Second_Swipe_Pause"
+echo "OFF" > "$SETTINGS_DIR/Second_Swipe_Pause_Controls"
+echo "SWIPENOTPLACE" > "$SETTINGS_DIR/Swipe_or_Place"
+echo "100" > "$SETTINGS_DIR/Max_Volume_Limit"
+echo "30" > "$SETTINGS_DIR/Startup_Volume"
+echo "0" > "$SETTINGS_DIR/Volume_Boot"
+echo "3" > "$SETTINGS_DIR/Audio_Volume_Change_Step"
+echo "0" > "$SETTINGS_DIR/Idle_Time_Before_Shutdown"
+echo "$SHARED_DIR/audiofolders" > "$SETTINGS_DIR/Audio_Folders_Path"
+echo "/var/lib/mpd/playlists" > "$SETTINGS_DIR/Playlists_Folders_Path"
+
+# Wichtige Dateien die oft fehlen
+echo "classic" > "$SETTINGS_DIR/edition"
+echo "2.9.0" > "$SETTINGS_DIR/version"
+echo "" > "$SETTINGS_DIR/Latest_Folder_Played"
+echo "OFF" > "$SETTINGS_DIR/ShowCover"
+echo "de-DE" > "$SETTINGS_DIR/Lang"
+echo "RESTART" > "$SETTINGS_DIR/Second_Swipe"
+echo "PCM" > "$SETTINGS_DIR/Audio_iFace_Name"
+echo "0" > "$SETTINGS_DIR/Audio_iFace_Active"
+echo "mpd" > "$SETTINGS_DIR/Audio_Volume_Manager"
+echo "OFF" > "$SETTINGS_DIR/Rfidreader_RC522_ReadMode_UID"
+echo "OFF" > "$SETTINGS_DIR/WlanIpReadYN"
+echo "OFF" > "$SETTINGS_DIR/MailWlanIpYN"
+echo "" > "$SETTINGS_DIR/WlanIpMailAddr"
+
+# Debug-Logging Konfiguration
+cat > "$SETTINGS_DIR/debugLogging.conf" << 'DEBUGEOF'
+DEBUG_WebApp="FALSE"
+DEBUG_WebApp_API="FALSE"
+DEBUG_playout_controls_sh="FALSE"
+DEBUG_rfid_trigger_play_sh="FALSE"
+DEBUG_inc_readNFCchip_sh="FALSE"
+DEBUG_daemon_rfid_reader_py="FALSE"
+DEBUG_gpio_buttons_py="FALSE"
+DEBUG_inc_writeGlobalConfig_sh="FALSE"
+DEBUGEOF
+
+# RFID Trigger Play Konfiguration (falls nicht vorhanden)
+if [ ! -f "$SETTINGS_DIR/rfid_trigger_play.conf" ]; then
+    cat > "$SETTINGS_DIR/rfid_trigger_play.conf" << 'RFIDEOF'
+# RFID Trigger Play Configuration
+AUDIOFOLDERSPATH="ACTIVE_AUDIOFOLDERSPATH"
+PLAYERSTOP="ACTIVE_PLAYERSTOP"
+PLAYSINGLE="ACTIVE_PLAYSINGLE"
+PLAYLISTADD="ACTIVE_PLAYLISTADD"
+PLAYLISTADDPLAY="ACTIVE_PLAYLISTADDPLAY"
+VOLUME="ACTIVE_VOLUME"
+RFIDEOF
+fi
+
+# Berechtigungen für Settings setzen
+sudo chown -R "$USER":www-data "$SETTINGS_DIR"
+sudo chmod -R 775 "$SETTINGS_DIR"
+chmod 777 "$SETTINGS_DIR/Latest_Folder_Played"
 
 # Global config generieren
 cd "$INSTALL_DIR/scripts"
